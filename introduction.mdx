@@ -19,16 +19,16 @@ description: Authentication and approval infrastructure for AI agents
 Your AI agents need to access user data across multiple platforms. Traditional OAuth forces you to:
 - Implement authentication for each service separately
 - Manage tokens, refresh flows, and complex permission systems
-- Deal with coarse permissions that overfetch data
 - Build custom approval systems for sensitive actions
+- Handle different auth patterns across every platform
 - Watch users abandon complex auth flows
 
 ## The Solution
 
 Vaultkit provides unified authentication for AI agents with:
-- **Granular, structured data access** - Query exactly what you need
-- **Human-in-the-loop approvals** - Built-in approval workflows for sensitive actions
-- **Cross-platform identity** - One integration for all data sources
+- **No OAuth implementation needed** - One integration for all data sources
+- **Human-in-the-loop approvals** - Built-in approval workflows with push notifications
+- **Consistent API** - Same interface across GitHub, Google, Slack, and more
 - **Complete audit trails** - Every access logged and user-controlled
 
 ## Quick Example
@@ -40,17 +40,13 @@ const vault = new Vaultkit({
   agentId: process.env.VAULTKIT_AGENT_ID 
 });
 
-// Query specific data with structured filters
+// No OAuth setup needed - just query user data
 const repos = await vault.query({
   userId: 'user_123', // Required: which user's data to access
-  resource: 'github:repos',
-  filters: {
-    topics: ['work', 'typescript'],
-    pushed: 'last_week'
-  }
+  resource: 'github:repos'
 });
 
-// Request approval for sensitive actions
+// Built-in approval system with push notifications
 const approval = await vault.requestApproval({
   userId: 'user_123', // Required: which user to ask for approval
   action: 'send_sms',
@@ -69,11 +65,11 @@ if (approval.granted) {
   <Card title="Human Approvals" icon="user-check" href="/features/human-approvals">
     Native approval workflows with push notifications and audit trails
   </Card>
-  <Card title="Structured Queries" icon="filter" href="/features/structured-queries">
-    Query exactly the data you need with granular filters
+  <Card title="OAuth Elimination" icon="key" href="/features/oauth-elimination">
+    Skip building OAuth integrations - one API for all platforms
   </Card>
   <Card title="Cross-Platform" icon="globe" href="/features/cross-platform">
-    One identity works across GitHub, Google, Slack, and more
+    Consistent interface across GitHub, Google, Slack, and more
   </Card>
   <Card title="Self-Hosting" icon="server" href="/features/self-hosting">
     Open source core with option to run your own infrastructure
@@ -84,8 +80,8 @@ if (approval.granted) {
 
 ### For Developers
 - **One integration** instead of dozens of OAuth implementations
-- **No more approval system building** - it's built in
-- **Predictable pricing** without per-conversation traps
+- **No token management** - refresh flows, storage, and error handling handled
+- **No more approval system building** - push notifications and audit trails included
 - **5-minute quickstart** with comprehensive SDKs
 
 ### For Users
@@ -98,7 +94,7 @@ if (approval.granted) {
 - **Reduced development time** - ship AI features faster
 - **Better compliance** - built-in audit trails and controls
 - **Higher user trust** - users stay in control
-- **Lower costs** - no overfetching or wasted API calls
+- **Consistent auth experience** across all platforms
 
 ## Get Started
 
@@ -116,8 +112,8 @@ if (approval.granted) {
 | Feature | Vaultkit | Composio | Traditional Auth |
 |---------|----------|----------|------------------|
 | Human Approvals | ✅ Native | ❌ 3rd party | ❌ Build yourself |
-| Granular Permissions | ✅ Built-in | ❌ API limited | ❌ Coarse |
-| User Ownership | ✅ Complete | ❌ Platform locked | ❌ Scattered |
+| OAuth Elimination | ✅ One integration | ✅ Actions only | ❌ Each service |
+| Token Management | ✅ Automatic | ❌ Manual | ❌ Manual |
 | Audit Trails | ✅ Automatic | ❌ Limited | ❌ Manual |
 | Agent Native | ✅ From ground up | ❌ Retrofitted | ❌ Human-focused |
 
