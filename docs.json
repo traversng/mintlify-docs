@@ -10,78 +10,73 @@
   "colors": {
     "primary": "#6366F1",
     "light": "#818CF8",
-    "dark": "#4F46E5",
-    "background": {
-      "dark": "#0F0F0F",
-      "light": "#FFFFFF"
-    }
+    "dark": "#4F46E5"
   },
   "favicon": "/favicon.svg",
-  "navigation": [
-    {
-      "group": "Get Started",
-      "pages": [
-        "introduction",
-        "quickstart"
-      ]
-    },
-    {
-      "group": "Core Concepts",
-      "pages": [
-        "concepts/architecture",
-        "concepts/permissions",
-        "concepts/approvals",
-        "concepts/audit-trails"
-      ]
-    },
-    {
-      "group": "Features",
-      "pages": [
-        "features/human-approvals",
-        "features/structured-queries",
-        "features/cross-platform",
-        "features/self-hosting"
-      ]
-    },
-    {
-      "group": "API Reference",
-      "pages": [
-        "api-reference/authentication",
-        "api-reference/agents",
-        "api-reference/permissions",
-        "api-reference/approvals",
-        "api-reference/queries"
-      ]
-    },
-    {
-      "group": "SDKs",
-      "pages": [
-        "sdks/typescript",
-        "sdks/python",
-        "sdks/go"
-      ]
-    },
-    {
-      "group": "Guides",
-      "pages": [
-        "guides/migration",
-        "guides/best-practices",
-        "guides/security"
-      ]
-    }
-  ],
-  "anchors": [
-    {
-      "name": "GitHub",
-      "icon": "github",
-      "url": "https://github.com/vaultkit/vaultkit"
-    },
-    {
-      "name": "Discord",
-      "icon": "discord",
-      "url": "https://discord.gg/vaultkit"
-    }
-  ],
+  "navigation": {
+    "anchors": [
+      {
+        "anchor": "GitHub",
+        "icon": "github",
+        "url": "https://github.com/vaultkit/vaultkit"
+      },
+      {
+        "anchor": "Discord",
+        "icon": "discord",
+        "url": "https://discord.gg/vaultkit"
+      }
+    ],
+    "groups": [
+      {
+        "group": "Get Started",
+        "pages": ["introduction", "quickstart"]
+      },
+      {
+        "group": "Core Concepts",
+        "pages": [
+          "concepts/architecture",
+          "concepts/permissions",
+          "concepts/approvals",
+          "concepts/audit-trails"
+        ]
+      },
+      {
+        "group": "Features",
+        "pages": [
+          "features/human-approvals",
+          "features/structured-queries",
+          "features/cross-platform",
+          "features/self-hosting"
+        ]
+      },
+      {
+        "group": "API Reference",
+        "pages": [
+          "api-reference/authentication",
+          "api-reference/agents",
+          "api-reference/permissions",
+          "api-reference/approvals",
+          "api-reference/queries"
+        ]
+      },
+      {
+        "group": "SDKs",
+        "pages": ["sdks/typescript", "sdks/python", "sdks/go"]
+      },
+      {
+        "group": "Guides",
+        "pages": [
+          "guides/migration",
+          "guides/best-practices",
+          "guides/security"
+        ]
+      }
+    ]
+  },
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
+  },
   "topbarLinks": [
     {
       "name": "Dashboard",
@@ -91,10 +86,6 @@
   "topbarCtaButton": {
     "name": "Get Started",
     "url": "https://app.vaultkit.dev/signup"
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
   },
   "footerSocials": {
     "twitter": "https://twitter.com/vaultkit",

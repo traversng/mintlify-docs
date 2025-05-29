@@ -42,6 +42,7 @@ const vault = new Vaultkit({
 
 // Query specific data with structured filters
 const repos = await vault.query({
+  userId: 'user_123', // Required: which user's data to access
   resource: 'github:repos',
   filters: {
     topics: ['work', 'typescript'],
@@ -51,6 +52,7 @@ const repos = await vault.query({
 
 // Request approval for sensitive actions
 const approval = await vault.requestApproval({
+  userId: 'user_123', // Required: which user to ask for approval
   action: 'send_sms',
   details: { to: '+1234567890', message: 'Meeting reminder' },
   context: 'Customer support automation'

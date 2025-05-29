@@ -1,0 +1,455 @@
+---
+title: 'Human-in-the-Loop Approvals'
+description: 'Built-in approval workflows for sensitive AI agent actions'
+icon: 'user-check'
+---
+
+<img
+  className="block dark:hidden"
+  src="/images/approvals-hero-light.png"
+  alt="Vaultkit Approvals Light"
+/>
+<img
+  className="hidden dark:block"
+  src="/images/approvals-hero-dark.png"
+  alt="Vaultkit Approvals Dark"
+/>
+
+## Overview
+
+Every AI agent eventually needs to perform sensitive actions - send messages, make purchases, delete data. Building a secure approval system is complex and time-consuming. Vaultkit provides native human-in-the-loop approval workflows, so you can focus on building great AI experiences.
+
+<Info>
+  **Why this matters**: Andrew from YC built a custom approval system for his AI agent. It took weeks and still doesn't have push notifications or audit trails. With Vaultkit, it's one function call.
+</Info>
+
+## How It Works
+
+<Steps>
+  <Step title="Agent requests approval">
+    Your agent calls `requestApproval()` with action details
+  </Step>
+  <Step title="User gets notified">
+    Push notification, SMS, or in-app alert based on user preference
+  </Step>
+  <Step title="User approves/denies">
+    One-tap decision with optional reason or modification
+  </Step>
+  <Step title="Agent proceeds">
+    Your agent gets the decision and acts accordingly
+  </Step>
+</Steps>
+
+## Basic Example
+
+```typescript
+const approval = await vault.requestApproval({
+  userId: currentUserId, // Get from your auth system
+  action: 'send_sms',
+  details: {
+    to: '+1234567890',
+    message: 'Your appointment is tomorrow at 2 PM'
+  },
+  context: 'Appointment reminder',
+  urgency: 'normal' // normal, high, critical
+});
+
+if (approval.granted) {
+  await sendSMS(approval.details);
+  console.log(`SMS sent with approval ${approval.id}`);
+} else {
+  console.log(`User denied: ${approval.reason}`);
+}
+```
+
+## Approval Channels
+
+### Push Notifications (Recommended)
+
+<CodeGroup>
+```typescript config
+vault.configure({
+  approvals: {
+    channel: 'push',
+    timeout: '5_minutes',
+    fallback: 'sms'
+  }
+});
+```
+
+```text notification
+🤖 AI Assistant
+Wants to: Send SMS to Mom
+"Happy Birthday! 🎂"
+
+[Approve] [Deny] [View Details]
+```
+</CodeGroup>
+
+### In-App Widget
+
+```jsx
+import { VaultkitApprovals } from '@vaultkit/react';
+
+function App() {
+  return (
+    <VaultkitApprovals 
+      userId={currentUser.id} // Required: current authenticated user
+      position="bottom-right"
+      theme="light"
+      sound={true}
+    />
+  );
+}
+```
+
+### SMS/Email Fallback
+
+```text
+Your AI assistant wants to send an SMS.
+To: +1 (555) 123-4567
+Preview: "Your appointment is..."
+
+✅ Approve: vaultkit.dev/a/xyz123
+❌ Deny: vaultkit.dev/d/xyz123
+
+This link expires in 5 minutes.
+```
+
+## Approval Policies
+
+Users control when approvals are needed:
+
+```typescript
+await vault.setApprovalPolicy({
+  userId: currentUserId, // Get from your auth system
+  
+  // Auto-approve safe actions
+  auto_approve: [
+    { action: 'read_calendar', condition: 'always' },
+    { action: 'send_email', condition: 'to_contacts_only' },
+    { action: 'create_task', condition: 'business_hours' }
+  ],
+  
+  // Always require approval
+  require_approval: [
+    { action: 'send_sms', condition: 'always' },
+    { action: 'make_purchase', condition: 'amount > 50' },
+    { action: 'delete_data', condition: 'always' },
+    { action: 'share_data', condition: 'with_third_party' }
+  ],
+  
+  // Settings
+  bulk_approval: true,              // "Approve all similar"
+  approval_expires: '1_hour',       // Auto-deny after timeout
+  require_2fa: ['make_purchase'],   // Extra security
+  notification_preferences: {
+    primary: 'push',
+    fallback: 'email',
+    quiet_hours: '10pm-8am'
+  }
+});
+```
+
+## Advanced Features
+
+### Rich Context
+
+Provide detailed context for better decisions:
+
+```typescript
+const approval = await vault.requestApproval({
+  userId: currentUserId, // Get from your auth system
+  action: 'book_flight',
+  details: {
+    airline: 'United',
+    price: '$450',
+    departure: '2024-03-15 10:00 AM',
+    return: '2024-03-20 5:00 PM'
+  },
+  context: 'Booking for approved business trip to SF',
+  metadata: {
+    budget_remaining: '$1,200',
+    policy_compliant: true,
+    similar_flights: [
+      { airline: 'Delta', price: '$380' },
+      { airline: 'Southwest', price: '$420' }
+    ]
+  },
+  urgency: 'high',
+  expires_in: '10_minutes'
+});
+```
+
+### Bulk Approvals
+
+Request multiple related approvals:
+
+```typescript
+const approvals = await vault.requestBulkApproval({
+  userId: currentUserId, // Get from your auth system
+
+  actions: [
+    { action: 'send_email', to: 'team@company.com' },
+    { action: 'create_calendar_event', date: 'tomorrow' },
+    { action: 'assign_task', to: 'john@company.com' }
+  ],
+  context: 'Setting up project kickoff',
+  allow_partial: true  // User can approve some, deny others
+});
+
+// Check individual results
+approvals.forEach(approval => {
+  if (approval.granted) {
+    // Perform the approved action
+  }
+});
+```
+
+### Conditional Logic
+
+```typescript
+// Chain approvals based on conditions
+const purchaseApproval = await vault.requestApproval({
+  action: 'make_purchase',
+  details: { item: 'Laptop', price: 1200 }
+});
+
+if (purchaseApproval.granted && purchaseApproval.details.price > 1000) {
+  // Request manager approval for high-value items
+  const managerApproval = await vault.requestApproval({
+    userId: purchaseApproval.details.managerId,
+    action: 'approve_purchase',
+    details: purchaseApproval.details,
+    context: `${purchaseApproval.userId} purchase request`
+  });
+}
+```
+
+## Audit Trail
+
+Every approval/denial is logged automatically:
+
+```typescript
+const history = await vault.getApprovalHistory({
+  userId: currentUserId, // Get from your auth system
+  timeframe: 'last_30_days',
+  actions: ['send_sms', 'make_purchase']
+});
+
+// Returns detailed audit trail
+[
+  {
+    id: 'apr_abc123',
+    action: 'send_sms',
+    decision: 'approved',
+    timestamp: '2024-01-15T10:30:00Z',
+    response_time: '23_seconds',
+    approval_method: 'push_notification',
+    agent_id: 'agent_shopping_assistant',
+    details: { to: '+1...', message: '...' },
+    ip_address: '192.168.1.1',
+    device: 'iPhone 14',
+    modifications: null
+  }
+]
+```
+
+## Complete Implementation Example
+
+Here's a real-world example for an AI shopping assistant:
+
+```typescript
+class ShoppingAssistant {
+  constructor() {
+    this.vault = new Vaultkit({ 
+      agentId: process.env.AGENT_ID 
+    });
+  }
+
+  async purchaseItem(userId, item, price) {
+    // Check user's policy
+    const needsApproval = await this.vault.checkPolicy({
+      userId,
+      action: 'make_purchase',
+      details: { amount: price }
+    });
+
+    if (needsApproval) {
+      const approval = await this.vault.requestApproval({
+        userId,
+        action: 'make_purchase',
+        details: {
+          item: item.name,
+          price: `$${price}`,
+          merchant: item.merchant,
+          image: item.image_url,
+          description: item.description
+        },
+        context: 'You asked me to buy this when it went on sale',
+        metadata: {
+          original_price: item.original_price,
+          discount: `${Math.round((1 - price/item.original_price) * 100)}%`,
+          price_history: item.price_history
+        },
+        urgency: item.limited_time ? 'high' : 'normal',
+        expires_in: '30_minutes'
+      });
+
+      if (!approval.granted) {
+        return { 
+          success: false, 
+          reason: approval.reason || 'User denied purchase' 
+        };
+      }
+
+      // User might have modified the purchase
+      if (approval.modifications) {
+        item = { ...item, ...approval.modifications };
+        price = approval.modifications.price || price;
+      }
+    }
+
+    // Proceed with purchase
+    const order = await this.processPurchase(item, price);
+    
+    // Log the action
+    await this.vault.logAction({
+      userId,
+      action: 'make_purchase',
+      approval_id: approval?.id,
+      details: { 
+        order_id: order.id, 
+        amount: price,
+        item: item.name
+      }
+    });
+
+    return { success: true, order };
+  }
+}
+```
+
+## Webhooks
+
+Get real-time notifications of approval decisions:
+
+```typescript
+// Configure webhook endpoint
+await vault.configureWebhook({
+  url: 'https://your-app.com/webhooks/approvals',
+  events: ['approval.granted', 'approval.denied', 'approval.expired'],
+  secret: process.env.WEBHOOK_SECRET
+});
+
+// Handle webhook
+app.post('/webhooks/approvals', (req, res) => {
+  const signature = req.headers['x-vaultkit-signature'];
+  
+  if (!vault.verifyWebhook(req.body, signature)) {
+    return res.status(401).send('Invalid signature');
+  }
+
+  const event = req.body;
+  
+  switch (event.type) {
+    case 'approval.granted':
+      // User approved - execute action
+      break;
+    case 'approval.denied':
+      // User denied - handle accordingly
+      break;
+    case 'approval.expired':
+      // Approval timed out
+      break;
+  }
+  
+  res.status(200).send('OK');
+});
+```
+
+## Comparison
+
+<CardGroup cols={2}>
+  <Card title="Without Vaultkit" icon="xmark" color="#ef4444">
+    - Build approval UI from scratch
+    - Implement push notifications
+    - Create audit logging system
+    - Handle timeout logic
+    - Build policy engine
+    - **Weeks of development**
+  </Card>
+  <Card title="With Vaultkit" icon="check" color="#10b981">
+    - One function call
+    - Push notifications included
+    - Automatic audit trails
+    - Built-in timeout handling
+    - Policy engine included
+    - **5 minutes to implement**
+  </Card>
+</CardGroup>
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Provide Clear Context">
+    Always explain why the agent needs to perform the action. Users are more likely to approve when they understand the purpose.
+  </Accordion>
+  
+  <Accordion title="Use Appropriate Urgency">
+    Reserve 'critical' urgency for truly time-sensitive actions. Overuse leads to notification fatigue.
+  </Accordion>
+  
+  <Accordion title="Implement Graceful Fallbacks">
+    Always handle denial cases gracefully. Provide alternative actions or explanations to the user.
+  </Accordion>
+  
+  <Accordion title="Respect Quiet Hours">
+    Configure notification preferences to respect user's quiet hours unless truly critical.
+  </Accordion>
+  
+  <Accordion title="Log Everything">
+    Use the audit trail for debugging and compliance. It's invaluable when users ask "why did my agent do that?"
+  </Accordion>
+</AccordionGroup>
+
+## FAQ
+
+<AccordionGroup>
+  <Accordion title="How fast are approvals?">
+    Push notifications typically deliver within 1-2 seconds. SMS/email fallbacks within 10-30 seconds.
+  </Accordion>
+  
+  <Accordion title="What if the user doesn't respond?">
+    Approvals expire based on your configured timeout (default 5 minutes). Expired approvals are treated as denials.
+  </Accordion>
+  
+  <Accordion title="Can users modify approval requests?">
+    Yes! Users can modify details before approving. For example, changing a purchase quantity or message content.
+  </Accordion>
+  
+  <Accordion title="Is there a limit on approvals?">
+    No hard limits, but we recommend batching related approvals to avoid notification spam.
+  </Accordion>
+  
+  <Accordion title="How secure are approvals?">
+    All approval links use signed tokens that expire. Push notifications use end-to-end encryption. Audit logs are immutable.
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart Guide" icon="rocket" href="/quickstart">
+    Add approvals to your agent in 5 minutes
+  </Card>
+  <Card title="Approval Policies" icon="shield-check" href="/concepts/approvals">
+    Deep dive into policy configuration
+  </Card>
+  <Card title="Audit Trails" icon="clipboard-list" href="/concepts/audit-trails">
+    Learn about compliance and logging
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference/approvals">
+    Complete approvals API documentation
+  </Card>
+</CardGroup>
