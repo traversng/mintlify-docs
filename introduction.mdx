@@ -14,24 +14,122 @@ description: Authentication and approval infrastructure for AI agents
   alt="Vaultkit Hero Dark"
 />
 
-## The Problem
+## What is Vaultkit?
 
-Your AI agents need to access user data across multiple platforms. Traditional OAuth forces you to:
-- Implement authentication for each service separately
-- Manage tokens, refresh flows, and complex permission systems
-- Build custom approval systems for sensitive actions
-- Handle different auth patterns across every platform
-- Watch users abandon complex auth flows
+Vaultkit is an authentication proxy that sits between your AI agent and user data sources (GitHub, Google, Slack, etc.). 
 
-## The Solution
+**Here's how it works:**
+1. You integrate the Vaultkit SDK once
+2. Vaultkit handles ALL OAuth implementations for you
+3. You query user data with simple API calls - no token management
+4. Users approve sensitive actions via push notifications
 
-Vaultkit provides unified authentication for AI agents with:
-- **No OAuth implementation needed** - One integration for all data sources
-- **Human-in-the-loop approvals** - Built-in approval workflows with push notifications
-- **Consistent API** - Same interface across GitHub, Google, Slack, and more
-- **Complete audit trails** - Every access logged and user-controlled
+Think of it as Stripe for authentication - we handle the complex infrastructure so you can focus on building your agent.
 
-## Quick Example
+## The Problem We Solve
+
+Building AI agents that access user data is painful:
+
+**Without Vaultkit:**
+```javascript
+// 1. Build OAuth flow for EACH service
+app.get('/connect-github', (req, res) => {
+  const githubOAuthUrl = buildGitHubOAuthUrl(...)
+  res.redirect(githubOAuthUrl)
+});
+app.get('/github-callback', async (req, res) => {
+  const token = await exchangeGitHubCode(req.query.code)
+  await storeToken(user.id, 'github', token)
+});
+// Repeat for Google, Slack, LinkedIn... 😭
+
+// 2. Manage tokens, refresh flows, errors
+if (isTokenExpired(githubToken)) {
+  githubToken = await refreshGitHubToken()
+}
+
+// 3. Build approval system AND notification infrastructure
+const approval = await customApprovalSystem.request(...)
+// Now you need to:
+// - Get user's phone number or email
+// - Set up Twilio/SendGrid/Firebase
+// - Handle delivery failures
+// - Build unsubscribe flows
+await sms.send(user.phone, approval)  // Hope they gave you their number!
+```
+
+**With Vaultkit:**
+```javascript
+// 1. One-time: Send user to Vaultkit to connect all services
+app.get('/connect', (req, res) => {
+  const vaultkitUrl = vault.getConnectUrl({
+    userId: user.id,
+    services: ['github', 'google', 'slack'],
+    redirectUrl: 'https://myapp.com/connected'
+  });
+  res.redirect(vaultkitUrl);
+});
+
+// 2. After user connects (they choose notification preferences here too!)
+app.get('/connected', (req, res) => {
+  // User has now connected all services through Vaultkit's UI
+  // They've also set up how they want to be notified (SMS, email, etc)
+  res.send('All services connected! You can now use the agent.');
+});
+
+// 3. Now just use their data - no token management
+const githubRepos = await vault.query({
+  userId: user.id,
+  resource: 'github:repos'
+});
+
+// Or get multiple services at once
+const allData = await vault.query({
+  userId: user.id,
+  resources: ['github:repos', 'slack:messages', 'google:calendar']
+});
+
+// Approvals just work - Vaultkit already knows how to notify them
+const approval = await vault.requestApproval({
+  userId: user.id,
+  action: 'send_email',
+  details: { to: 'customer@example.com', subject: 'Update' }
+});
+```
+
+## What You Can Build
+
+With Vaultkit, you can create AI agents that:
+
+- **Read GitHub repos** to understand a user's codebase
+- **Send Slack messages** with explicit approval for each message
+- **Access Google Calendar** to schedule meetings intelligently
+- **Analyze LinkedIn profiles** for recruiting workflows
+- **Combine data from multiple sources** for comprehensive insights
+
+All without implementing a single OAuth flow or building notification infrastructure.
+
+## Current Status
+
+<Note>
+Vaultkit is currently in private beta. We're onboarding design partners to help shape the product.
+</Note>
+
+**✅ What's Working:**
+- Core authentication proxy
+- GitHub integration
+- Approval workflows with push notifications
+- A2A protocol specification
+
+**🚧 Coming Soon:**
+- npm packages (January 2025)
+- Google, Slack, LinkedIn integrations (Q1 2025)
+- Self-hosting documentation (Q1 2025)
+- Production SLAs (Q2 2025)
+
+**📧 Get Early Access:** Email founders@vaultkit.dev with your use case
+
+## Quick Example (Coming Soon)
 
 ```typescript
 import { Vaultkit } from '@vaultkit/client';
