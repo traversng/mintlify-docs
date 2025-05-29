@@ -17,6 +17,10 @@
       {
         "group": "Features",
         "pages": ["features/human-approvals"]
+      },
+      {
+        "group": "Examples",
+        "pages": ["examples/a2a"]
       }
     ]
   }

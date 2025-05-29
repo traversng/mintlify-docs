@@ -14,6 +14,18 @@ description: 'Get your first Vaultkit query running in 5 minutes'
   </Card>
 </CardGroup>
 
+## Choose Your Integration
+
+<Tabs>
+  <Tab title="REST API (Recommended for getting started)">
+    Traditional HTTP requests - works with any programming language and easy to debug. Perfect for web/mobile apps and quick prototyping.
+  </Tab>
+  
+  <Tab title="A2A Protocol (Optimized for agents)">
+    JSON-RPC protocol designed for autonomous agents. Includes agent discovery, task management, and asynchronous execution patterns.
+  </Tab>
+</Tabs>
+
 ## Setup
 
 <Steps>
@@ -42,105 +54,225 @@ description: 'Get your first Vaultkit query running in 5 minutes'
   </Step>
 
   <Step title="Create Your First Agent">
-    Create `index.js`:
+    <Tabs>
+      <Tab title="REST API">
+        Create `index.js`:
 
-    ```javascript
-    import { Vaultkit } from '@vaultkit/client';
-    import dotenv from 'dotenv';
+        ```javascript
+        import { Vaultkit } from '@vaultkit/client';
+        import dotenv from 'dotenv';
 
-    dotenv.config();
+        dotenv.config();
 
-    const vault = new Vaultkit({
-      agentId: process.env.VAULTKIT_AGENT_ID,
-      apiKey: process.env.VAULTKIT_API_KEY
-    });
+        const vault = new Vaultkit({
+          agentId: process.env.VAULTKIT_AGENT_ID,
+          apiKey: process.env.VAULTKIT_API_KEY
+        });
 
-    // Generate auth URL for user
-    const authUrl = vault.getAuthorizationUrl({
-      permissions: ['github:repos:read'],
-      redirect_uri: 'http://localhost:3000/callback'
-    });
+        // Generate auth URL for user
+        const authUrl = vault.getAuthorizationUrl({
+          permissions: ['github:repos:read'],
+          redirect_uri: 'http://localhost:3000/callback'
+        });
 
-    console.log('Send user to:', authUrl);
-    ```
+        console.log('Send user to:', authUrl);
+        ```
+      </Tab>
+      
+      <Tab title="A2A Protocol">
+        Create `index.js`:
+
+        ```javascript
+        import { A2AClient } from '@vaultkit/a2a';
+        import dotenv from 'dotenv';
+
+        dotenv.config();
+
+        // A2A Client for agent-to-agent communication
+        const agent = new A2AClient(
+          'https://auth.vaultkit.dev', // Vaultkit auth agent URL
+          process.env.VAULTKIT_API_KEY
+        );
+
+        // Discover Vaultkit's authentication capabilities
+        const agentCard = await agent.discover();
+        console.log('Available auth skills:', agentCard.skills.map(s => s.id));
+
+        // Generate auth URL for user
+        const authTask = await agent.sendTask('generate_auth_url', {
+          permissions: ['github:repos:read'],
+          redirect_uri: 'http://localhost:3000/callback'
+        });
+
+        const result = await agent.waitForCompletion(authTask.id);
+        const authUrl = result.artifacts[0].parts[0].data.url;
+        console.log('Send user to:', authUrl);
+        ```
+      </Tab>
+    </Tabs>
   </Step>
 
   <Step title="Handle User Authorization">
-    Add Express to handle the callback:
+    <Tabs>
+      <Tab title="REST API">
+        Add Express to handle the callback:
 
-    ```bash
-    npm install express
-    ```
+        ```bash
+        npm install express
+        ```
 
-    Update `index.js`:
+        Update `index.js`:
 
-    ```javascript
-    import express from 'express';
-    import { Vaultkit } from '@vaultkit/client';
-    import dotenv from 'dotenv';
+        ```javascript
+        import express from 'express';
+        import { Vaultkit } from '@vaultkit/client';
+        import dotenv from 'dotenv';
 
-    dotenv.config();
+        dotenv.config();
 
-    const app = express();
-    const vault = new Vaultkit({
-      agentId: process.env.VAULTKIT_AGENT_ID,
-      apiKey: process.env.VAULTKIT_API_KEY
-    });
+        const app = express();
+        const vault = new Vaultkit({
+          agentId: process.env.VAULTKIT_AGENT_ID,
+          apiKey: process.env.VAULTKIT_API_KEY
+        });
 
-    // Homepage with auth link
-    app.get('/', (req, res) => {
-      const authUrl = vault.getAuthorizationUrl({
-        permissions: ['github:repos:read'],
-        redirect_uri: 'http://localhost:3000/callback'
-      });
+        // Homepage with auth link
+        app.get('/', (req, res) => {
+          const authUrl = vault.getAuthorizationUrl({
+            permissions: ['github:repos:read'],
+            redirect_uri: 'http://localhost:3000/callback'
+          });
+          
+          res.send(`
+            <h1>Vaultkit Demo</h1>
+            <a href="${authUrl}">Connect GitHub</a>
+          `);
+        });
+
+        // Handle OAuth callback
+        app.get('/callback', async (req, res) => {
+          const { code } = req.query;
+          const { userId } = await vault.handleCallback(code);
+          
+          // Store userId however you manage user sessions
+          res.redirect(`/repos?userId=${userId}`);
+        });
+
+        app.listen(3000, () => {
+          console.log('Demo at http://localhost:3000');
+        });
+        ```
+      </Tab>
       
-      res.send(`
-        <h1>Vaultkit Demo</h1>
-        <a href="${authUrl}">Connect GitHub</a>
-      `);
-    });
+      <Tab title="A2A Protocol">
+        Add Express to handle the callback:
 
-    // Handle OAuth callback
-    app.get('/callback', async (req, res) => {
-      const { code } = req.query;
-      const { userId } = await vault.handleCallback(code);
-      
-      // Store userId however you manage user sessions
-      res.redirect(`/repos?userId=${userId}`);
-    });
+        ```bash
+        npm install express
+        ```
 
-    app.listen(3000, () => {
-      console.log('Demo at http://localhost:3000');
-    });
-    ```
+        Update `index.js`:
+
+        ```javascript
+        import express from 'express';
+        import { A2AClient } from '@vaultkit/a2a';
+        import dotenv from 'dotenv';
+
+        dotenv.config();
+
+        const app = express();
+        const agent = new A2AClient(
+          'https://auth.vaultkit.dev',
+          process.env.VAULTKIT_API_KEY
+        );
+
+        // Homepage with auth link
+        app.get('/', async (req, res) => {
+          // Use A2A protocol to generate auth URL
+          const authTask = await agent.sendTask('generate_auth_url', {
+            permissions: ['github:repos:read'],
+            redirect_uri: 'http://localhost:3000/callback'
+          });
+          
+          const result = await agent.waitForCompletion(authTask.id);
+          const authUrl = result.artifacts[0].parts[0].data.url;
+          
+          res.send(`
+            <h1>Vaultkit A2A Demo</h1>
+            <a href="${authUrl}">Connect GitHub</a>
+          `);
+        });
+
+        // Handle OAuth callback via A2A
+        app.get('/callback', async (req, res) => {
+          const { code } = req.query;
+          
+          // Send callback handling task to Vaultkit agent
+          const callbackTask = await agent.sendTask('handle_callback', { code });
+          const result = await agent.waitForCompletion(callbackTask.id);
+          const { userId } = result.artifacts[0].parts[0].data;
+          
+          res.redirect(`/repos?userId=${userId}`);
+        });
+
+        app.listen(3000, () => {
+          console.log('A2A Demo at http://localhost:3000');
+        });
+        ```
+      </Tab>
+    </Tabs>
   </Step>
 
   <Step title="Query User Data">
-    Add a route to query repositories:
+    <Tabs>
+      <Tab title="REST API">
+        Add a route to query repositories:
 
-    ```javascript
-    app.get('/repos', async (req, res) => {
-      const { userId } = req.query; // Get from your auth system
+        ```javascript
+        app.get('/repos', async (req, res) => {
+          const { userId } = req.query; // Get from your auth system
+          
+          // Query user's GitHub repositories
+          const repos = await vault.query({
+            userId, // Required: identifies which user's data to access
+            resource: 'github:repos'
+          });
+          
+          res.json({
+            message: 'User repositories',
+            count: repos.length,
+            repos: repos
+          });
+        });
+        ```
+      </Tab>
       
-      // Query with structured filters
-      const repos = await vault.query({
-        userId, // Required: identifies which user's data to access
-        resource: 'github:repos',
-        filters: {
-          visibility: 'public',
-          language: 'javascript',
-          pushed: 'last_month'
-        },
-        select: ['name', 'description', 'stars', 'url']
-      });
-      
-      res.json({
-        message: 'Filtered repositories',
-        count: repos.length,
-        repos: repos
-      });
-    });
-    ```
+      <Tab title="A2A Protocol">
+        Add a route to query repositories via A2A:
+
+        ```javascript
+        app.get('/repos', async (req, res) => {
+          const { userId } = req.query; // Get from your auth system
+          
+          // Send query task to Vaultkit agent
+          const queryTask = await agent.sendTask('query_data', {
+            userId, // Required: identifies which user's data to access
+            resource: 'github:repos'
+          });
+          
+          // Wait for task completion and get results
+          const result = await agent.waitForCompletion(queryTask.id);
+          const repos = result.artifacts[0].parts[0].data;
+          
+          res.json({
+            message: 'User repositories (via A2A)',
+            count: repos.length,
+            repos: repos
+          });
+        });
+        ```
+      </Tab>
+    </Tabs>
   </Step>
 </Steps>
 
@@ -153,47 +285,83 @@ node index.js
 Visit [http://localhost:3000](http://localhost:3000) and:
 1. Click "Connect GitHub"
 2. Authorize Vaultkit access
-3. See your filtered repository data
+3. See your repository data
 
 ## What Just Happened?
 
 1. User clicked your auth link
 2. Vaultkit handled the GitHub OAuth flow securely
 3. User approved specific permissions
-4. You queried their data with granular filters
-5. Vaultkit returned only matching data (not everything)
+4. You queried their data with one API call
+5. Vaultkit handled all token management automatically
 
-**No OAuth tokens to manage. No refresh logic. No overfetching.**
+**No OAuth tokens to manage. No refresh logic. No auth complexity.**
 
 ## Add Human Approvals
 
 Make your agent request approval for sensitive actions:
 
-```javascript
-app.post('/send-notification', async (req, res) => {
-  const { userId, message, recipient } = req.body; // Get userId from your auth
+<Tabs>
+  <Tab title="REST API">
+    ```javascript
+    app.post('/send-notification', async (req, res) => {
+      const { userId, message, recipient } = req.body; // Get userId from your auth
+      
+      // Request user approval
+      const approval = await vault.requestApproval({
+        userId, // Required: which user to ask for approval
+        action: 'send_sms',
+        details: {
+          to: recipient,
+          message: message
+        },
+        context: 'Customer notification',
+        urgency: 'normal'
+      });
+      
+      if (approval.granted) {
+        // User approved - send the SMS
+        await sendSMS(approval.details);
+        res.json({ success: true, approvalId: approval.id });
+      } else {
+        res.json({ success: false, reason: approval.reason });
+      }
+    });
+    ```
+  </Tab>
   
-  // Request user approval
-  const approval = await vault.requestApproval({
-    userId, // Required: which user to ask for approval
-    action: 'send_sms',
-    details: {
-      to: recipient,
-      message: message
-    },
-    context: 'Customer notification',
-    urgency: 'normal'
-  });
-  
-  if (approval.granted) {
-    // User approved - send the SMS
-    await sendSMS(approval.details);
-    res.json({ success: true, approvalId: approval.id });
-  } else {
-    res.json({ success: false, reason: approval.reason });
-  }
-});
-```
+  <Tab title="A2A Protocol">
+    ```javascript
+    app.post('/send-notification', async (req, res) => {
+      const { userId, message, recipient } = req.body; // Get userId from your auth
+      
+      // Send approval request task to Vaultkit agent
+      const approvalTask = await agent.sendTask('request_approval', {
+        userId, // Required: which user to ask for approval
+        action: 'send_sms',
+        details: {
+          to: recipient,
+          message: message
+        },
+        context: 'Customer notification',
+        urgency: 'normal'
+      });
+      
+      // Wait for user response (A2A handles the push notification)
+      const result = await agent.waitForCompletion(approvalTask.id);
+      const approval = result.artifacts[0].parts[0].data;
+      
+      if (approval.granted) {
+        // User approved - send the SMS
+        await sendSMS(approval.details);
+        res.json({ success: true, approvalId: approval.id });
+      } else {
+        res.json({ success: false, reason: approval.reason });
+      }
+    });
+    ```
+  </Tab>
+</Tabs>
 
 Users get instant push notifications to approve/deny actions.
 
@@ -203,8 +371,8 @@ Users get instant push notifications to approve/deny actions.
   <Card title="Human Approvals Guide" icon="user-check" href="/features/human-approvals">
     Learn about approval workflows
   </Card>
-  <Card title="Structured Queries" icon="filter" href="/features/structured-queries">
-    Master advanced filtering
+  <Card title="A2A Protocol Examples" icon="code" href="/examples/a2a">
+    Complete A2A server and client examples
   </Card>
   <Card title="TypeScript SDK" icon="code" href="/sdks/typescript">
     Full SDK reference
@@ -222,9 +390,9 @@ Users get instant push notifications to approve/deny actions.
 const context = await vault.batch({
   userId: currentUserId, // Get from your auth system
   queries: [
-    { resource: 'github:repos', filters: { language: 'typescript' } },
-    { resource: 'github:issues', filters: { state: 'open', assigned: '@me' } },
-    { resource: 'slack:messages', filters: { channel: 'engineering' } }
+    { resource: 'github:repos' },
+    { resource: 'github:issues' },
+    { resource: 'slack:messages' }
   ]
 });
 ```
