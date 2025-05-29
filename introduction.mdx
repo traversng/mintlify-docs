@@ -1,0 +1,134 @@
+---
+title: Introduction
+description: Authentication and approval infrastructure for AI agents
+---
+
+<img
+  className="block dark:hidden"
+  src="/images/hero-light.png"
+  alt="Vaultkit Hero Light"
+/>
+<img
+  className="hidden dark:block"
+  src="/images/hero-dark.png"
+  alt="Vaultkit Hero Dark"
+/>
+
+## The Problem
+
+Your AI agents need to access user data across multiple platforms. Traditional OAuth forces you to:
+- Implement authentication for each service separately
+- Manage tokens, refresh flows, and complex permission systems
+- Deal with coarse permissions that overfetch data
+- Build custom approval systems for sensitive actions
+- Watch users abandon complex auth flows
+
+## The Solution
+
+Vaultkit provides unified authentication for AI agents with:
+- **Granular, structured data access** - Query exactly what you need
+- **Human-in-the-loop approvals** - Built-in approval workflows for sensitive actions
+- **Cross-platform identity** - One integration for all data sources
+- **Complete audit trails** - Every access logged and user-controlled
+
+## Quick Example
+
+```typescript
+import { Vaultkit } from '@vaultkit/client';
+
+const vault = new Vaultkit({ 
+  agentId: process.env.VAULTKIT_AGENT_ID 
+});
+
+// Query specific data with structured filters
+const repos = await vault.query({
+  resource: 'github:repos',
+  filters: {
+    topics: ['work', 'typescript'],
+    pushed: 'last_week'
+  }
+});
+
+// Request approval for sensitive actions
+const approval = await vault.requestApproval({
+  action: 'send_sms',
+  details: { to: '+1234567890', message: 'Meeting reminder' },
+  context: 'Customer support automation'
+});
+
+if (approval.granted) {
+  await sendSMS(approval.details);
+}
+```
+
+## Core Features
+
+<CardGroup cols={2}>
+  <Card title="Human Approvals" icon="user-check" href="/features/human-approvals">
+    Native approval workflows with push notifications and audit trails
+  </Card>
+  <Card title="Structured Queries" icon="filter" href="/features/structured-queries">
+    Query exactly the data you need with granular filters
+  </Card>
+  <Card title="Cross-Platform" icon="globe" href="/features/cross-platform">
+    One identity works across GitHub, Google, Slack, and more
+  </Card>
+  <Card title="Self-Hosting" icon="server" href="/features/self-hosting">
+    Open source core with option to run your own infrastructure
+  </Card>
+</CardGroup>
+
+## Why Vaultkit?
+
+### For Developers
+- **One integration** instead of dozens of OAuth implementations
+- **No more approval system building** - it's built in
+- **Predictable pricing** without per-conversation traps
+- **5-minute quickstart** with comprehensive SDKs
+
+### For Users
+- **Complete control** over their data and permissions
+- **Instant approvals** via push notifications
+- **Full transparency** with audit trails
+- **Data portability** - take their identity anywhere
+
+### For Businesses
+- **Reduced development time** - ship AI features faster
+- **Better compliance** - built-in audit trails and controls
+- **Higher user trust** - users stay in control
+- **Lower costs** - no overfetching or wasted API calls
+
+## Get Started
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Get your first query running in 5 minutes
+  </Card>
+  <Card title="Architecture" icon="diagram-project" href="/concepts/architecture">
+    Understand how Vaultkit works
+  </Card>
+</CardGroup>
+
+## Compare Vaultkit
+
+| Feature | Vaultkit | Composio | Traditional Auth |
+|---------|----------|----------|------------------|
+| Human Approvals | ✅ Native | ❌ 3rd party | ❌ Build yourself |
+| Granular Permissions | ✅ Built-in | ❌ API limited | ❌ Coarse |
+| User Ownership | ✅ Complete | ❌ Platform locked | ❌ Scattered |
+| Audit Trails | ✅ Automatic | ❌ Limited | ❌ Manual |
+| Agent Native | ✅ From ground up | ❌ Retrofitted | ❌ Human-focused |
+
+## Join the Community
+
+<CardGroup cols={3}>
+  <Card title="GitHub" icon="github" href="https://github.com/vaultkit/vaultkit">
+    Star us on GitHub
+  </Card>
+  <Card title="Discord" icon="discord" href="https://discord.gg/vaultkit">
+    Chat with developers
+  </Card>
+  <Card title="Twitter" icon="twitter" href="https://twitter.com/vaultkit">
+    Follow for updates
+  </Card>
+</CardGroup>
