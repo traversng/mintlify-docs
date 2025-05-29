@@ -2,79 +2,22 @@
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
   "name": "Vaultkit",
-  "metadata": {
-    "og:site_name": "Vaultkit Documentation",
-    "og:title": "Vaultkit - Authentication & Approvals for AI Agents",
-    "og:description": "The authentication infrastructure for AI agents. Granular permissions, human-in-the-loop approvals, and user-owned data."
-  },
+  "favicon": "/favicon.svg",
   "colors": {
     "primary": "#6366F1",
     "light": "#818CF8",
     "dark": "#4F46E5"
   },
-  "favicon": "/favicon.svg",
   "navigation": {
-    "anchors": [
-      {
-        "anchor": "GitHub",
-        "icon": "github",
-        "url": "https://github.com/vaultkit/vaultkit"
-      },
-      {
-        "anchor": "Discord",
-        "icon": "discord",
-        "url": "https://discord.gg/vaultkit"
-      }
-    ],
     "groups": [
       {
         "group": "Get Started",
         "pages": ["introduction", "quickstart"]
       },
       {
-        "group": "Core Concepts",
-        "pages": [
-          "concepts/architecture",
-          "concepts/permissions",
-          "concepts/approvals",
-          "concepts/audit-trails"
-        ]
-      },
-      {
         "group": "Features",
-        "pages": [
-          "features/human-approvals",
-          "features/structured-queries",
-          "features/cross-platform",
-          "features/self-hosting"
-        ]
-      },
-      {
-        "group": "API Reference",
-        "pages": [
-          "api-reference/authentication",
-          "api-reference/agents",
-          "api-reference/permissions",
-          "api-reference/approvals",
-          "api-reference/queries"
-        ]
-      },
-      {
-        "group": "SDKs",
-        "pages": ["sdks/typescript", "sdks/python", "sdks/go"]
-      },
-      {
-        "group": "Guides",
-        "pages": [
-          "guides/migration",
-          "guides/best-practices",
-          "guides/security"
-        ]
+        "pages": ["features/human-approvals"]
       }
     ]
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
   }
 }
