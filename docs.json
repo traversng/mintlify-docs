@@ -76,25 +76,5 @@
   "logo": {
     "light": "/logo/light.svg",
     "dark": "/logo/dark.svg"
-  },
-  "topbarLinks": [
-    {
-      "name": "Dashboard",
-      "url": "https://app.vaultkit.dev"
-    }
-  ],
-  "topbarCtaButton": {
-    "name": "Get Started",
-    "url": "https://app.vaultkit.dev/signup"
-  },
-  "footerSocials": {
-    "twitter": "https://twitter.com/vaultkit",
-    "github": "https://github.com/vaultkit",
-    "discord": "https://discord.gg/vaultkit"
-  },
-  "analytics": {
-    "posthog": {
-      "apiKey": "YOUR_POSTHOG_KEY"
-    }
   }
 }
