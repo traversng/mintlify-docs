@@ -34,28 +34,112 @@ Building AI agents that access user data is painful:
 ```javascript
 // 1. Build OAuth flow for EACH service
 app.get('/connect-github', (req, res) => {
-  const githubOAuthUrl = buildGitHubOAuthUrl(...)
-  res.redirect(githubOAuthUrl)
+  // buildGitHubOAuthUrl means:
+  // - Register app with GitHub (get client ID/secret)
+  // - Generate secure state parameter
+  // - Store state in session/database
+  // - Construct proper OAuth URL with scopes
+  const state = crypto.randomBytes(32).toString('hex');
+  await storeState(user.id, state);
+  const githubOAuthUrl = `https://github.com/login/oauth/authorize?` +
+    `client_id=${GITHUB_CLIENT_ID}&` +
+    `redirect_uri=${encodeURIComponent(REDIRECT_URI)}&` +
+    `scope=${encodeURIComponent('repo user')}&` +
+    `state=${state}`;
+  res.redirect(githubOAuthUrl);
 });
+
 app.get('/github-callback', async (req, res) => {
-  const token = await exchangeGitHubCode(req.query.code)
-  await storeToken(user.id, 'github', token)
+  // exchangeGitHubCode means:
+  // - Verify state parameter (CSRF protection)
+  // - Make POST request to GitHub
+  // - Handle network errors, rate limits
+  // - Parse token response
+  const { code, state } = req.query;
+  if (!verifyState(user.id, state)) throw new Error('Invalid state');
+  
+  const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      client_id: GITHUB_CLIENT_ID,
+      client_secret: GITHUB_CLIENT_SECRET,
+      code,
+      redirect_uri: REDIRECT_URI
+    })
+  });
+  
+  const { access_token, refresh_token, expires_in } = await tokenResponse.json();
+  
+  // Store tokens securely (encrypted)
+  await storeTokens(user.id, 'github', {
+    accessToken: encrypt(access_token),
+    refreshToken: encrypt(refresh_token),
+    expiresAt: Date.now() + (expires_in * 1000)
+  });
 });
-// Repeat for Google, Slack, LinkedIn... 😭
+// Repeat ALL of this for Google, Slack, LinkedIn... 😭
 
 // 2. Manage tokens, refresh flows, errors
 if (isTokenExpired(githubToken)) {
-  githubToken = await refreshGitHubToken()
+  // refreshGitHubToken means:
+  // - Retrieve refresh token from secure storage
+  // - Make refresh request to GitHub
+  // - Handle refresh failures (user needs to re-auth)
+  // - Update stored tokens
+  const tokens = await getTokens(user.id, 'github');
+  const refreshResponse = await fetch('https://github.com/login/oauth/access_token', {
+    method: 'POST',
+    body: JSON.stringify({
+      grant_type: 'refresh_token',
+      refresh_token: decrypt(tokens.refreshToken),
+      client_id: GITHUB_CLIENT_ID,
+      client_secret: GITHUB_CLIENT_SECRET
+    })
+  });
+  
+  if (!refreshResponse.ok) {
+    // User needs to re-authenticate
+    return redirectToReauth();
+  }
+  
+  const newTokens = await refreshResponse.json();
+  await updateTokens(user.id, 'github', newTokens);
 }
 
 // 3. Build approval system AND notification infrastructure
-const approval = await customApprovalSystem.request(...)
-// Now you need to:
-// - Get user's phone number or email
-// - Set up Twilio/SendGrid/Firebase
-// - Handle delivery failures
-// - Build unsubscribe flows
-await sms.send(user.phone, approval)  // Hope they gave you their number!
+// customApprovalSystem.request means:
+// - Create approval record in database
+// - Generate secure approval ID
+// - Build approval UI
+// - Set up approval endpoints
+// - Handle approval expiration
+const approval = {
+  id: crypto.randomUUID(),
+  userId: user.id,
+  action: 'send_email',
+  status: 'pending',
+  expiresAt: Date.now() + (30 * 60 * 1000)
+};
+await db.approvals.create(approval);
+
+// Now send notification (you built all of this):
+// - Get user's phone from your database
+// - Set up Twilio account ($$$)
+// - Handle SMS delivery failures
+// - Build unsubscribe system
+// - Track notification preferences
+const twilioClient = new Twilio(TWILIO_SID, TWILIO_AUTH);
+try {
+  await twilioClient.messages.create({
+    to: user.phone, // You had to collect and verify this
+    from: TWILIO_PHONE,
+    body: `Approve action: ${APPROVAL_URL}/${approval.id}`
+  });
+} catch (error) {
+  // Handle delivery failures, retry logic, etc.
+  await fallbackToEmail(user, approval);
+}
 ```
 
 **With Vaultkit:**
